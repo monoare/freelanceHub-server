@@ -32,6 +32,9 @@ async function run() {
     // await client.connect();
 
     const jobsCollection = client.db("freelanceHubDB").collection("jobs");
+    const bookingCollection = client
+      .db("freelanceHubDB")
+      .collection("bookings");
 
     //   Jobs related APIs
     app.get("/api/v1/jobs", async (req, res) => {
@@ -45,6 +48,13 @@ async function run() {
       const id = req.params.jobID;
       const query = { _id: new ObjectId(id) };
       const result = await jobsCollection.findOne(query);
+      res.send(result);
+    });
+
+    // insert booking data to db
+    app.post("/api/v1/user/create-booking", (req, res) => {
+      const booking = req.body;
+      const result = bookingCollection.insertOne(booking);
       res.send(result);
     });
 
