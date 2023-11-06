@@ -1,6 +1,7 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 require("dotenv").config();
+const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -32,31 +33,20 @@ async function run() {
 
     const jobsCollection = client.db("freelanceHubDB").collection("jobs");
 
-    //   Web Development related ServerApiVersion
+    //   Jobs related APIs
     app.get("/api/v1/jobs", async (req, res) => {
-      let queryObj = {};
-      const category = req.query.category;
-      console.log({ category });
-      if (category) {
-        queryObj.category = category;
-      }
-      const cursor = jobsCollection.find(queryObj);
+      const cursor = jobsCollection.find();
       const result = await cursor.toArray();
       console.log({ result });
       res.send(result);
     });
 
-    // app.get("/api/v1/jobs/category", async (req, res) => {
-    //   const category = req.body.category;
-    //   let query = {};
-    //   if (category) {
-    //     query.category = category;
-    //   }
-    //   console.log({ query });
-    //   const result = await jobsCollection.find(query).toArray();
-    //   console.log({ result });
-    //   res.send(result);
-    // });
+    app.get("/api/v1/jobs/:jobID", async (req, res) => {
+      const id = req.params.jobID;
+      const query = { _id: new ObjectId(id) };
+      const result = await jobsCollection.findOne(query);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
