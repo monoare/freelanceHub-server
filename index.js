@@ -51,6 +51,13 @@ async function run() {
       res.send(result);
     });
 
+    // insert jobs data to db
+    app.post("/api/v1/jobs", (req, res) => {
+      const booking = req.body;
+      const result = bookingCollection.insertOne(booking);
+      res.send(result);
+    });
+
     // insert booking data to db
     app.post("/api/v1/user/create-booking", (req, res) => {
       const booking = req.body;
