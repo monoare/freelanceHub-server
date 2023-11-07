@@ -66,6 +66,13 @@ async function run() {
       res.send(result);
     });
 
+    // get user specific job data
+    app.get("/api/v1/user/jobs", (req, res) => {
+      const queryEmail = req.query.email;
+      const result = jobsCollection.find(queryEmail);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
