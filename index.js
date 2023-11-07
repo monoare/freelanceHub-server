@@ -40,7 +40,7 @@ async function run() {
     app.get("/api/v1/jobs", async (req, res) => {
       const cursor = jobsCollection.find();
       const result = await cursor.toArray();
-      console.log({ result });
+
       res.send(result);
     });
 
@@ -53,8 +53,9 @@ async function run() {
 
     // insert jobs data to db
     app.post("/api/v1/jobs", (req, res) => {
-      const booking = req.body;
-      const result = bookingCollection.insertOne(booking);
+      const job = req.body;
+      const result = jobsCollection.insertOne(job);
+      console.log({ result });
       res.send(result);
     });
 
