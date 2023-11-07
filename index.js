@@ -52,24 +52,31 @@ async function run() {
     });
 
     // insert jobs data to db
-    app.post("/api/v1/jobs", (req, res) => {
+    app.post("/api/v1/jobs", async (req, res) => {
       const job = req.body;
-      const result = jobsCollection.insertOne(job);
+      const result = await jobsCollection.insertOne(job);
       console.log({ result });
       res.send(result);
     });
 
     // insert booking data to db
-    app.post("/api/v1/user/create-booking", (req, res) => {
+    app.post("/api/v1/user/create-booking", async (req, res) => {
       const booking = req.body;
-      const result = bookingCollection.insertOne(booking);
+      const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
 
     // get user specific job data
-    app.get("/api/v1/user/jobs", (req, res) => {
+    app.get("/api/v1/user/jobs", async (req, res) => {
       const queryEmail = req.query.email;
-      const result = jobsCollection.find(queryEmail);
+
+      let query = {};
+      if (queryEmail) {
+        query.email = queryEmail;
+      }
+
+      const result = await jobsCollection.find(query).toArray();
+      console.log("User-specific job data:", result);
       res.send(result);
     });
 
