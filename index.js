@@ -59,10 +59,28 @@ async function run() {
       res.send(result);
     });
 
-    // insert booking data to db
+    // insert applied job/booking data to db
     app.post("/api/v1/user/create-booking", async (req, res) => {
       const booking = req.body;
       const result = await bookingCollection.insertOne(booking);
+      console.log("Booking data:", result);
+      res.send(result);
+    });
+
+    // get the applied job/booking data from db
+    app.get("/api/v1/user/find-booking", async (req, res) => {
+      const cursor = bookingCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // update the applied jobs
+
+    app.patch("/api/v1/user/update-booking/:id", async (req, res) => {
+      const id = req.params.jobID;
+      const query = { _id: new ObjectId(id) };
+
+      const result = userCollection.updateOne(query);
       res.send(result);
     });
 
@@ -77,6 +95,35 @@ async function run() {
 
       const result = await jobsCollection.find(query).toArray();
       console.log("User-specific job data:", result);
+      res.send(result);
+    });
+
+    // update the job
+    app.patch("/api/v1/user/Update-jobs/:jobID", async (req, res) => {
+      const id = req.params.jobID;
+      const filter = { _id: new ObjectId(id) };
+      const UpdatedBooking = req.body;
+      console.log(UpdatedBooking);
+
+      const updateDoc = {
+        $set: {
+          jobTitle: UpdatedBooking.jobTitle,
+          deadline: UpdatedBooking.deadline,
+          description: UpdatedBooking.description,
+          category: UpdatedBooking.category,
+          priceRange: UpdatedBooking.priceRange,
+        },
+      };
+      const result = await jobsCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // delete the job
+    app.patch("/api/v1/user/delete-job/:jobID", async (req, res) => {
+      const id = req.params.jobID;
+      const query = { _id: new ObjectId(id) };
+      console.log(query);
+      const result = await jobsCollection.deleteOne(query);
       res.send(result);
     });
 
