@@ -14,7 +14,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "https://freelancehub-45daa.web.app",
+      "https://freelancehub-45daa.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
