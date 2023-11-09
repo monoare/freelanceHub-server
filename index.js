@@ -1,6 +1,8 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 require("dotenv").config();
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -8,6 +10,8 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(express.json());
 
+// Cookies parsers
+app.use(cookieParser());
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -36,11 +40,34 @@ async function run() {
       .db("freelanceHubDB")
       .collection("bookings");
 
+    // verify token and grant access
+    const gateman = (req, res, next) => {
+      const token = req?.cookies?.token;
+      console.log(token);
+
+      // if client does not send token
+      if (!token) {
+        return res.status(401).send({ message: "You are not authorized" });
+      }
+      // verify a token symmetric
+      jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_SECRET,
+        function (err, decoded) {
+          if (err) {
+            return res.status(401).send({ message: "You are not authorized" });
+          }
+          //  attached decoded user so that others can get it
+          req.user = decoded;
+          next();
+        }
+      );
+    };
+
     //   Jobs related APIs
     app.get("/api/v1/jobs", async (req, res) => {
       const cursor = jobsCollection.find();
       const result = await cursor.toArray();
-
       res.send(result);
     });
 
@@ -60,7 +87,7 @@ async function run() {
     });
 
     // insert applied job/booking data to db
-    app.post("/api/v1/user/create-booking", async (req, res) => {
+    app.post("/api/v1/user/create-booking", gateman, async (req, res) => {
       const booking = req.body;
       const result = await bookingCollection.insertOne(booking);
       console.log("Booking data:", result);
@@ -68,19 +95,30 @@ async function run() {
     });
 
     // get the applied job/booking data from db
-    app.get("/api/v1/user/find-booking", async (req, res) => {
+    app.get("/api/v1/user/find-booking", gateman, async (req, res) => {
       const cursor = bookingCollection.find();
       const result = await cursor.toArray();
+      console.log(result);
       res.send(result);
     });
 
-    // update the applied jobs
-
-    app.patch("/api/v1/user/update-booking/:id", async (req, res) => {
-      const id = req.params.jobID;
+    // Update the applied/booking jobs
+    app.patch("/api/v1/user/update-booking/:id", gateman, async (req, res) => {
+      const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
-      const result = userCollection.updateOne(query);
+      // Check if id is a valid ObjectId
+      if (!ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid ObjectId" });
+      }
+
+      const updatedData = req.body; // This should contain the fields you want to update
+
+      const updateDoc = {
+        $set: updatedData, // Use $set to update specific fields
+      };
+
+      const result = await bookingCollection.updateOne(query, updateDoc);
       res.send(result);
     });
 
@@ -94,12 +132,12 @@ async function run() {
       }
 
       const result = await jobsCollection.find(query).toArray();
-      console.log("User-specific job data:", result);
+      // console.log("User-specific job data:", result);
       res.send(result);
     });
 
     // update the job
-    app.patch("/api/v1/user/Update-jobs/:jobID", async (req, res) => {
+    app.patch("/api/v1/user/Update-jobs/:jobID", gateman, async (req, res) => {
       const id = req.params.jobID;
       const filter = { _id: new ObjectId(id) };
       const UpdatedBooking = req.body;
@@ -118,13 +156,30 @@ async function run() {
       res.send(result);
     });
 
-    // delete the job
-    app.patch("/api/v1/user/delete-job/:jobID", async (req, res) => {
+    // Corrected DELETE endpoint
+    app.delete("/api/v1/user/delete-job/:jobID", gateman, async (req, res) => {
       const id = req.params.jobID;
       const query = { _id: new ObjectId(id) };
-      console.log(query);
+      console.log("Deleting job with ID:", id);
       const result = await jobsCollection.deleteOne(query);
       res.send(result);
+    });
+
+    // auth related api
+    app.post("/api/v1/auth/access-token", (req, res) => {
+      const user = req.body;
+      console.log("User", user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "5h",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        })
+        .send({ success: true });
     });
 
     // Send a ping to confirm a successful connection
